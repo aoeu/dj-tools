@@ -1,0 +1,12 @@
+#!/bin/sh
+
+flacFile="$1"
+test "" = "$flacFile" && \
+	echo 1>&2 'A flac file must be specified as the first argument.' && \
+	return 1
+test ! $(echo $flacFile | grep '.flac$') && \
+	echo 1>&2 'The flac file argument must have a ".flac" file extension.' && \
+	return 1
+metaflac --show-all-tags $flacFile | \
+	awk -F= '{$1 = tolower($1)}; {printf "%-25s %-20s\n", $1, $2}'
+
