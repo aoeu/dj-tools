@@ -66,7 +66,6 @@ class MetaFLACGUI:
         # Configure grid weights
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
-        main_frame.columnconfigure(1, weight=1)
         
         # File selection section
         file_frame = ttk.LabelFrame(main_frame, text="File Selection", padding=str(int(5 * self.scale_factor)))
@@ -85,12 +84,11 @@ class MetaFLACGUI:
         ttk.Button(buttons_frame, text="Load Tags", command=self.load_tags).pack(pady=(0, int(2 * self.scale_factor)))
         ttk.Button(buttons_frame, text="Save Tags", command=self.save_tags).pack()
         
-        # Custom tag section - left side
+        # Custom tag section - left side (1/3 width)
         custom_frame = ttk.LabelFrame(main_frame, text="Custom Tags", padding=str(int(5 * self.scale_factor)))
         custom_frame.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, padding), padx=(0, int(5 * self.scale_factor)))
         custom_frame.columnconfigure(0, weight=1)
         custom_frame.rowconfigure(0, weight=1)
-        main_frame.columnconfigure(0, weight=1)  # Custom tags column
         
         text_height = int(6 * self.scale_factor) if self.scale_factor > 1.2 else 6
         self.custom_tags_text = scrolledtext.ScrolledText(custom_frame, height=text_height, wrap=tk.WORD)
@@ -102,12 +100,20 @@ class MetaFLACGUI:
         
         self.custom_tags_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         
-        # Tags editing section - right side
+        # Tags editing section - right side (2/3 width)
         tags_frame = ttk.LabelFrame(main_frame, text="Metadata Tags", padding=str(int(5 * self.scale_factor)))
         tags_frame.grid(row=1, column=1, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, padding), padx=(int(5 * self.scale_factor), 0))
         tags_frame.columnconfigure(1, weight=1)
+        
+        # Set column weights and sizes: Custom tags = 1/3, Metadata tags = 2/3
         main_frame.rowconfigure(1, weight=1)
-        main_frame.columnconfigure(1, weight=2)  # Make metadata tags column wider
+        
+        # Calculate screen width for proper proportions
+        screen_width = self.root.winfo_screenwidth()
+        custom_width = int(screen_width * 0.3)  # 30% for custom tags
+        
+        main_frame.columnconfigure(0, weight=0, minsize=custom_width)  # Custom tags column (fixed at ~1/3)
+        main_frame.columnconfigure(1, weight=1)  # Metadata tags column (takes remaining space)
         
         # Create scrollable frame for tags
         canvas_height = int(300 * self.scale_factor)
