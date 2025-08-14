@@ -13,6 +13,7 @@ import sys
 import argparse
 import re
 from pathlib import Path
+from datetime import datetime
 
 class MetaFLACGUI:
     def __init__(self, root, scale_factor=1.0, initial_file=None):
@@ -83,6 +84,11 @@ class MetaFLACGUI:
         
         ttk.Button(buttons_frame, text="Load Tags", command=self.load_tags).pack(pady=(0, int(2 * self.scale_factor)))
         ttk.Button(buttons_frame, text="Save Tags", command=self.save_tags).pack()
+        
+        # Success message label (initially hidden)
+        self.success_var = tk.StringVar()
+        self.success_label = ttk.Label(file_frame, textvariable=self.success_var, foreground="green")
+        self.success_label.grid(row=1, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(5, 0))
         
         # Custom tag section - left side (1/3 width)
         custom_frame = ttk.LabelFrame(main_frame, text="Custom Tags", padding=str(int(5 * self.scale_factor)))
@@ -226,6 +232,8 @@ class MetaFLACGUI:
             self.current_file = filename
             self.file_var.set(filename)
             self.status_var.set(f"Selected: {os.path.basename(filename)}")
+            # Clear success message when new file is selected
+            self.success_var.set("")
     
     def load_tags(self):
         """Load existing tags from FLAC file"""
@@ -265,6 +273,8 @@ class MetaFLACGUI:
                 self.custom_tags_text.insert(1.0, '\n'.join(custom_tags))
             
             self.status_var.set(f"Loaded tags from {os.path.basename(self.current_file)}")
+            # Clear success message when loading new tags
+            self.success_var.set("")
             
         except subprocess.CalledProcessError as e:
             messagebox.showerror("Error", f"Failed to load tags: {e.stderr}")
@@ -307,8 +317,10 @@ class MetaFLACGUI:
                             check=True
                         )
             
+            # Update status and show success message with datetime
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.status_var.set(f"Tags saved to {os.path.basename(self.current_file)}")
-            messagebox.showinfo("Success", "Tags saved successfully!")
+            self.success_var.set(f"{current_time} - Tags saved successfully!")
             
         except subprocess.CalledProcessError as e:
             messagebox.showerror("Error", f"Failed to save tags: {e}")
@@ -373,6 +385,8 @@ class MetaFLACGUI:
         for entry in self.tag_entries.values():
             entry.delete(0, tk.END)
         self.custom_tags_text.delete(1.0, tk.END)
+        # Clear success message when form is cleared
+        self.success_var.set("")
 
 def main():
     # Parse command line arguments
