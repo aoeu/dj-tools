@@ -3,5 +3,5 @@ setup:
 
 extra:
 	yay -S dragon-drop
-	sudo pacman -S fzf
+	sudo pacman -S fzf fd easytag sox
 
