@@ -92,7 +92,7 @@ class MetaFLACGUI:
         
         # Custom tag section - left side (1/3 width)
         custom_frame = ttk.LabelFrame(main_frame, text="Custom Tags", padding=str(int(5 * self.scale_factor)))
-        custom_frame.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, padding), padx=(0, int(5 * self.scale_factor)))
+        custom_frame.grid(row=2, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, padding), padx=(0, int(5 * self.scale_factor)))
         custom_frame.columnconfigure(0, weight=1)
         custom_frame.rowconfigure(0, weight=1)
         
@@ -106,13 +106,21 @@ class MetaFLACGUI:
         
         self.custom_tags_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         
+        # Save Tags and Exit button - centered above Metadata Tags section
+        save_exit_frame = ttk.Frame(main_frame)
+        save_exit_frame.grid(row=1, column=1, sticky=(tk.W, tk.E), pady=(0, int(5 * self.scale_factor)), padx=(int(5 * self.scale_factor), 0))
+        save_exit_frame.columnconfigure(0, weight=1)  # Center the button
+        
+        ttk.Button(save_exit_frame, text="Save Tags and Exit", command=self.save_tags_and_exit).grid(row=0, column=0)
+        
         # Tags editing section - right side (2/3 width)
         tags_frame = ttk.LabelFrame(main_frame, text="Metadata Tags", padding=str(int(5 * self.scale_factor)))
-        tags_frame.grid(row=1, column=1, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, padding), padx=(int(5 * self.scale_factor), 0))
+        tags_frame.grid(row=2, column=1, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, padding), padx=(int(5 * self.scale_factor), 0))
         tags_frame.columnconfigure(1, weight=1)
         
         # Set column weights and sizes: Custom tags = 1/3, Metadata tags = 2/3
-        main_frame.rowconfigure(1, weight=1)
+        main_frame.rowconfigure(1, weight=0)  # Save Tags and Exit button row
+        main_frame.rowconfigure(2, weight=1)  # Main content row
         
         # Calculate screen width for proper proportions
         screen_width = self.root.winfo_screenwidth()
@@ -174,7 +182,7 @@ class MetaFLACGUI:
         
         # Buttons section - centered Save Tags button
         buttons_frame = ttk.Frame(main_frame)
-        buttons_frame.grid(row=2, column=0, columnspan=2, pady=(0, padding))
+        buttons_frame.grid(row=3, column=0, columnspan=2, pady=(0, padding))
         buttons_frame.columnconfigure(0, weight=1)  # Allow centering
         
         button_padx = int(5 * self.scale_factor)
@@ -197,7 +205,7 @@ class MetaFLACGUI:
         self.status_var = tk.StringVar()
         self.status_var.set("Ready - Select a FLAC file to begin")
         status_bar = ttk.Label(main_frame, textvariable=self.status_var, relief=tk.SUNKEN)
-        status_bar.grid(row=3, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(padding, 0))
+        status_bar.grid(row=4, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(padding, 0))
         
         # Bind mouse wheel to canvas
         def _on_mousewheel(event):
@@ -278,6 +286,50 @@ class MetaFLACGUI:
             
         except subprocess.CalledProcessError as e:
             messagebox.showerror("Error", f"Failed to load tags: {e.stderr}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Unexpected error: {str(e)}")
+    
+    def save_tags_and_exit(self):
+        """Save tags to FLAC file and exit the application"""
+        if not self.current_file:
+            messagebox.showwarning("Warning", "Please select a FLAC file first")
+            return
+        
+        if not self.check_metaflac():
+            return
+        
+        try:
+            # First, remove all existing tags
+            subprocess.run(
+                ['metaflac', '--remove-all-tags', self.current_file],
+                check=True
+            )
+            
+            # Add common tags
+            for tag, entry in self.tag_entries.items():
+                value = entry.get().strip()
+                if value:
+                    subprocess.run(
+                        ['metaflac', f'--set-tag={tag}={value}', self.current_file],
+                        check=True
+                    )
+            
+            # Add custom tags
+            custom_text = self.custom_tags_text.get(1.0, tk.END).strip()
+            if custom_text:
+                for line in custom_text.split('\n'):
+                    line = line.strip()
+                    if line and '=' in line:
+                        subprocess.run(
+                            ['metaflac', f'--set-tag={line}', self.current_file],
+                            check=True
+                        )
+            
+            # Exit silently after successful save
+            self.root.quit()
+            
+        except subprocess.CalledProcessError as e:
+            messagebox.showerror("Error", f"Failed to save tags: {e}")
         except Exception as e:
             messagebox.showerror("Error", f"Unexpected error: {str(e)}")
     
